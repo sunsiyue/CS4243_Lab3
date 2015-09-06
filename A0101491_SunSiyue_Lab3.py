@@ -3,15 +3,79 @@ import numpy as np
 from numpy import linalg as la
 import math
 
-sobelKernelHor=np.matrix('-1, 0, 1; -2, 0, 2; -1, 0, 1')
-sobelKernelVer=np.matrix('1, 2, 1; 0, 0, 0; -1, -2, -1')
+sobel_Kernel_Horizontal = np.matrix('-1, 0, 1; -2, 0, 2; -1, 0, 1')
+sobel_Kernel_Vertical = np.matrix('1, 2, 1; 0, 0, 0; -1, -2, -1')
 
-print sobelKernelHor
-
-prewittKernelHor=np.matrix('-1, 0, 1; -1, 0, 1; -1, 0, 1')
-prewittKernelVer=np.matrix('1, 1, 1; 0, 0, 0; -1, -1, -1')
+prewitt_Kernel_Horizontal = np.matrix('-1, 0, 1; -1, 0, 1; -1, 0, 1')
+prewitt_Kernel_Vertical = np.matrix('1, 1, 1; 0, 0, 0; -1, -1, -1')
 
 
+#loop runs three times to process three pictures
+for i in range(1, 4):
+    pic_name = "pictures/test" + str(i) + ".jpg"
+    img = cv2.imread(pic_name, 0)
+    rows, columns = img.shape
+
+    img_Sobel_Horizontal = np.zeros((rows, columns))
+    img_Sobel_Vertical = np.zeros((rows, columns))
+    img_Prewit_Horizontal = np.zeros((rows, columns))
+    img_Prewit_Vertical = np.zeros((rows, columns))
+    
+    for j in range(0,rows):
+        for k in range(0,columns):
+            #sobel method
+            sobel_Horizontal_Matrix = sobel_Kernel_Horizontal*img[j,k]
+            sobel_Vertical_Matrix = sobel_Kernel_Vertical*img[j,k]
+            #prewit method
+            prewitt_Horizontal_Matrix = prewitt_Kernel_Horizontal*img[j,k]
+            prewitt_Vertical_Matrix = prewitt_Kernel_Vertical*img[j,k]
+            for rowIndex in range(0,3):
+                for colIndex in range(0,3):
+                    if(j + rowIndex - 1 >= 0 and j + rowIndex - 1 < rows and k + colIndex - 1 >= 0 and k + colIndex - 1<columns):
+                        img_Sobel_Horizontal[j-1+rowIndex,k-1+colIndex]+=sobel_Horizontal_Matrix[rowIndex, colIndex]
+                        img_Sobel_Vertical[j-1+rowIndex,k-1+colIndex]+=sobel_Vertical_Matrix[rowIndex, colIndex]
+                        img_Prewit_Horizontal[j-1+rowIndex,k-1+colIndex]+=prewitt_Horizontal_Matrix[rowIndex, colIndex]
+                        img_Prewit_Vertical[j-1+rowIndex,k-1+colIndex]+=prewitt_Vertical_Matrix[rowIndex, colIndex]
+    img_Sobel_Result = img_Sobel_Horizontal**2+img_Sobel_Vertical**2
+    img_Prewit_Result = img_Prewit_Horizontal**2+img_Prewit_Vertical**2
+    for r in range(0,rows):
+        for c in range(0,columns):
+            img_Sobel_Result[r,c]=math.sqrt(img_Sobel_Result[r,c])
+            img_Prewit_Result[r,c]=math.sqrt(img_Prewit_Result[r,c])
+    
+
+    cv2.imwrite('pictures/test'+str(i)+'_Sobel_result.jpg',img_Sobel_Result)
+    cv2.imwrite('pictures/test'+str(i)+'_Prewitt_result.jpg',img_Prewit_Result)
+
+
+
+
+    #thinning of sobel image
+    thinningC, thinningR = img_Sobel_Result.shape
+
+    print "thinning: " + str(thinningC) + "  " + str(thinningR)
+
+    img_thinned = np.zeros((thinningC, thinningR))
+    
+
+
+    prevIntensity = 0
+    curIntensity = 0
+    for thinningIndexR in range(0, thinningR):
+        for thinningIndexC in range(0, thinningC):
+
+            if(thinningIndexC < thinningC-2 and thinningIndexR < thinningR-2):
+                prevIntensity = img_Sobel_Result[thinningIndexC, thinningIndexR]
+                curIntensity = img_Sobel_Result[thinningIndexC+1, thinningIndexR]
+                if(curIntensity + 15 < prevIntensity):
+                    img_thinned[thinningIndexC, thinningIndexR] = prevIntensity
+
+            
+            
+
+
+
+    cv2.imwrite('pictures/test'+str(i)+'_thinned.jpg',img_thinned)
 
 
 
@@ -25,35 +89,17 @@ prewittKernelVer=np.matrix('1, 1, 1; 0, 0, 0; -1, -1, -1')
 
 
 
-for i in range(1,4):
-    pic_name="pictures/test"+str(i)+".jpg"
-    img=cv2.imread(pic_name, 0)
-    (row,col)=img.shape
-    imgSHor=np.zeros((row, col))
-    imgSVer=np.zeros((row, col))
-    imgPHor=np.zeros((row, col))
-    imgPVer=np.zeros((row,col))
-    for j in range(0,row):
-        for k in range(0,col):
-            sobelMatrixHor=sobelKernelHor*img[j,k]
-            sobelMatrixVer=sobelKernelVer*img[j,k]
-            prewittMatrixHor=prewittKernelHor*img[j,k]
-            prewittMatrixVer=prewittKernelVer*img[j,k]
-            for filterRow in range(0,3):
-                for filterCol in range(0,3):
-                    if(j-1+filterRow>=0 and j-1+filterRow<row and k-1+filterCol>=0 and k-1+filterCol<col):
-                        imgSHor[j-1+filterRow,k-1+filterCol]+=sobelMatrixHor[filterRow, filterCol]
-                        imgSVer[j-1+filterRow,k-1+filterCol]+=sobelMatrixVer[filterRow, filterCol]
-                        imgPHor[j-1+filterRow,k-1+filterCol]+=prewittMatrixHor[filterRow, filterCol]
-                        imgPVer[j-1+filterRow,k-1+filterCol]+=prewittMatrixVer[filterRow, filterCol]
-    imgS=imgSHor**2+imgSVer**2
-    imgP=imgPHor**2+imgPVer**2
-    for r in range(0,row):
-        for c in range(0,col):
-            imgS[r,c]=math.sqrt(imgS[r,c])
-            imgP[r,c]=math.sqrt(imgP[r,c])
-    #cv2.imwrite('pictures/result'+str(i)+'Sober.jpg',imgS)
-    #cv2.imwrite('pictures/result'+str(i)+'Prewitt.jpg',imgP)
-    print imgS
-    print imgP
-    #cv2.imwrite('pictures/result'+str(i)+'Thin.jpg',imgT)
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
